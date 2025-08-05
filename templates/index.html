@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habitual - Habit Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { 
+            padding: 8px; border: 1px solid #ddd; border-radius: 4px; 
+        }
+        .checkbox-group { display: flex; gap: 20px; align-items: center; }
+        .checkbox-group label { display: flex; align-items: center; gap: 5px; font-weight: normal; }
+        .stats { background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        .why-field { margin-top: 10px; }
+        #why-text { width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Habitual - Habit Tracker</h1>
+    
+    <div class="habit-section">
+        <h2>Daily Habit</h2>
+        
+        <div class="form-group">
+            <label for="started-date">Started:</label>
+            <input type="date" id="started-date" name="started" value="{{ started_date }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="frequency">Frequency:</label>
+            <select id="frequency" name="frequency">
+                <option value="Daily" {% if frequency == 'Daily' %}selected{% endif %}>Daily</option>
+                <option value="Weekly" {% if frequency == 'Weekly' %}selected{% endif %}>Weekly</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="counter">Counter:</label>
+            <input type="number" id="counter" name="counter" value="{{ counter }}" min="0">
+        </div>
+        
+        <div class="form-group">
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="done-checkbox" name="done" {% if habit_done %}checked{% endif %}>
+                    Done
+                </label>
+                <label>
+                    <input type="checkbox" id="not-done-checkbox" name="not_done" {% if not_done %}checked{% endif %}>
+                    Not Done
+                </label>
+            </div>
+            
+            <div class="why-field" id="why-field" style="display: {% if not_done %}block{% else %}none{% endif %};">
+                <label for="why-text">Why?</label>
+                <textarea id="why-text" name="why" rows="3" placeholder="Why wasn't this completed?">{{ why_text }}</textarea>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <p>Success Rate: <span id="percentage">{{ success_percentage }}%</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data from server
+        let habitData = {
+            startedDate: document.getElementById('started-date').value,
+            frequency: document.getElementById('frequency').value,
+            counter: parseInt(document.getElementById('counter').value) || 0,
+            completedDates: {{ completed_dates | tojson }},
+            notDoneDates: {{ not_done_dates | tojson }},
+            whyEntries: {{ why_entries | tojson }}
+        };
+
+        // Calculate percentage based on current data
+        function calculatePercentage() {
+            const startDate = new Date(habitData.startedDate);
+            const today = new Date();
+            
+            let totalPeriods = 0;
+            let completedPeriods = habitData.counter; // Use counter value directly
+            
+            if (habitData.frequency === 'Daily') {
+                // Calculate days between start date and today (inclusive)
+                const diffTime = Math.abs(today - startDate);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                totalPeriods = diffDays + 1; // +1 to include both start and end date
+            } else if (habitData.frequency === 'Weekly') {
+                // Calculate weeks between start date and today (inclusive)
+                const diffTime = Math.abs(today - startDate);
+                const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+                totalPeriods = diffWeeks + 1; // +1 to include both start and end week
+            }
+            
+            if (totalPeriods <= 0) return 0;
+            
+            // Calculate percentage: counter / total_periods_since_start * 100
+            // This gives the actual success rate over the entire time period
+            return Math.round((completedPeriods / totalPeriods) * 100);
+        }
+
+        // Calculate total periods since start date
+        function getTotalPeriods() {
+            const startDate = new Date(habitData.startedDate);
+            const today = new Date();
+            
+            if (habitData.frequency === 'Daily') {
+                const diffTime = Math.abs(today - startDate);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays + 1;
+            } else if (habitData.frequency === 'Weekly') {
+                const diffTime = Math.abs(today - startDate);
+                const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+                return diffWeeks + 1;
+            }
+            return 1;
+        }
+
+        // Load habit data from localStorage
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('habitData');
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    
+                    // Update habitData object
+                    habitData.startedDate = parsedData.startedDate || habitData.startedDate;
+                    habitData.frequency = parsedData.frequency || habitData.frequency;
+                    habitData.counter = parsedData.counter || habitData.counter;
+                    habitData.completedDates = parsedData.completedDates || habitData.completedDates;
+                    habitData.notDoneDates = parsedData.notDoneDates || habitData.notDoneDates;
+                    habitData.whyEntries = parsedData.whyEntries || habitData.whyEntries;
+                    
+                    // Update form fields
+                    document.getElementById('started-date').value = habitData.startedDate;
+                    document.getElementById('frequency').value = habitData.frequency;
+                    document.getElementById('counter').value = habitData.counter;
+                    
+                    // Check if today is in completed or not done dates
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayCompleted = habitData.completedDates.includes(today);
+                    const todayNotDone = habitData.notDoneDates.includes(today);
+                    
+                    document.getElementById('done-checkbox').checked = todayCompleted;
+                    document.getElementById('not-done-checkbox').checked = todayNotDone;
+                    
+                    // Show/hide why field and set text if needed
+                    const whyField = document.getElementById('why-field');
+                    const whyText = document.getElementById('why-text');
+                    
+                    if (todayNotDone) {
+                        whyField.style.display = 'block';
+                        whyText.value = habitData.whyEntries[today] || '';
+                    } else {
+                        whyField.style.display = 'none';
+                    }
+                    
+                    return true; // Successfully loaded
+                }
+            } catch (e) {
+                console.warn('Failed to load from localStorage:', e);
+            }
+            return false; // No data or failed to load
+        }
+
+        // Save habit data to localStorage
+        function saveToLocalStorage() {
+            try {
+                const dataToSave = {
+                    startedDate: habitData.startedDate,
+                    frequency: habitData.frequency,
+                    counter: habitData.counter,
+                    completedDates: habitData.completedDates,
+                    notDoneDates: habitData.notDoneDates,
+                    whyEntries: habitData.whyEntries
+                };
+                localStorage.setItem('habitData', JSON.stringify(dataToSave));
+            } catch (e) {
+                console.warn('Failed to save to localStorage:', e);
+            }
+        }
+
+        // Update percentage display
+        function updatePercentage() {
+            const percentage = calculatePercentage();
+            document.getElementById('percentage').textContent = percentage + '%';
+        }
+
+        // Get current period key
+        function getCurrentPeriodKey() {
+            const today = new Date();
+            if (habitData.frequency === 'Daily') {
+                return today.toISOString().split('T')[0]; // YYYY-MM-DD
+            } else if (habitData.frequency === 'Weekly') {
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+                return startOfWeek.toISOString().split('T')[0];
+            }
+            return today.toISOString().split('T')[0];
+        }
+
+        // Check if current period is already tracked
+        function isCurrentPeriodTracked() {
+            const periodKey = getCurrentPeriodKey();
+            return habitData.completedDates.includes(periodKey) || 
+                   habitData.notDoneDates.includes(periodKey);
+        }
+
+        // Handle Done checkbox
+        document.getElementById('done-checkbox').addEventListener('change', function() {
+            const periodKey = getCurrentPeriodKey();
+            const notDoneCheckbox = document.getElementById('not-done-checkbox');
+            
+            if (this.checked) {
+                // Uncheck Not Done
+                notDoneCheckbox.checked = false;
+                document.getElementById('why-field').style.display = 'none';
+                
+                // Remove from not done dates if present
+                const notDoneIndex = habitData.notDoneDates.indexOf(periodKey);
+                if (notDoneIndex > -1) {
+                    habitData.notDoneDates.splice(notDoneIndex, 1);
+                }
+                
+                // Add to completed dates if not already there
+                if (!habitData.completedDates.includes(periodKey)) {
+                    habitData.completedDates.push(periodKey);
+                    habitData.counter++;
+                    document.getElementById('counter').value = habitData.counter;
+                }
+            } else {
+                // Remove from completed dates
+                const index = habitData.completedDates.indexOf(periodKey);
+                if (index > -1) {
+                    habitData.completedDates.splice(index, 1);
+                    habitData.counter = Math.max(0, habitData.counter - 1);
+                    document.getElementById('counter').value = habitData.counter;
+                }
+            }
+            
+            updatePercentage();
+            saveToLocalStorage();
+        });
+
+        // Handle Not Done checkbox
+        document.getElementById('not-done-checkbox').addEventListener('change', function() {
+            const periodKey = getCurrentPeriodKey();
+            const doneCheckbox = document.getElementById('done-checkbox');
+            const whyField = document.getElementById('why-field');
+            
+            if (this.checked) {
+                // Uncheck Done
+                doneCheckbox.checked = false;
+                whyField.style.display = 'block';
+                
+                // Remove from completed dates if present
+                const completedIndex = habitData.completedDates.indexOf(periodKey);
+                if (completedIndex > -1) {
+                    habitData.completedDates.splice(completedIndex, 1);
+                    habitData.counter = Math.max(0, habitData.counter - 1);
+                    document.getElementById('counter').value = habitData.counter;
+                }
+                
+                // Add to not done dates if not already there
+                if (!habitData.notDoneDates.includes(periodKey)) {
+                    habitData.notDoneDates.push(periodKey);
+                }
+            } else {
+                whyField.style.display = 'none';
+                
+                // Remove from not done dates
+                const index = habitData.notDoneDates.indexOf(periodKey);
+                if (index > -1) {
+                    habitData.notDoneDates.splice(index, 1);
+                }
+            }
+            
+            updatePercentage();
+            saveToLocalStorage();
+        });
+
+        // Handle frequency change
+        document.getElementById('frequency').addEventListener('change', function() {
+            habitData.frequency = this.value;
+            updatePercentage();
+            saveToLocalStorage();
+        });
+
+        // Handle start date change
+        document.getElementById('started-date').addEventListener('change', function() {
+            habitData.startedDate = this.value;
+            
+            // Update counter max value based on new start date
+            const totalPeriods = getTotalPeriods();
+            const counterField = document.getElementById('counter');
+            counterField.setAttribute('max', totalPeriods);
+            
+            // Cap current counter value if it exceeds new maximum
+            if (habitData.counter > totalPeriods) {
+                habitData.counter = totalPeriods;
+                counterField.value = totalPeriods;
+            }
+            
+            updatePercentage();
+            saveToLocalStorage();
+        });
+
+        // Handle counter change
+        document.getElementById('counter').addEventListener('change', function() {
+            const newValue = parseInt(this.value) || 0;
+            const totalPeriods = getTotalPeriods();
+            
+            // Cap counter at total periods
+            if (newValue > totalPeriods) {
+                this.value = totalPeriods;
+                habitData.counter = totalPeriods;
+            } else if (newValue < 0) {
+                this.value = 0;
+                habitData.counter = 0;
+            } else {
+                habitData.counter = newValue;
+            }
+            
+            updatePercentage();
+            saveToLocalStorage();
+        });
+
+        // Add event listener for why text changes
+        document.getElementById('why-text').addEventListener('change', function() {
+            const today = new Date().toISOString().split('T')[0];
+            habitData.whyEntries[today] = this.value;
+            saveToLocalStorage();
+        });
+
+        // Load saved data from localStorage first
+        loadFromLocalStorage();
+        
+        // Initialize counter max value and update percentage
+        const initialTotalPeriods = getTotalPeriods();
+        document.getElementById('counter').setAttribute('max', initialTotalPeriods);
+        updatePercentage();
+    </script>
+</body>
+</html>
