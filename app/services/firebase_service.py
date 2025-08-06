@@ -41,6 +41,11 @@ class FirebaseService:
             for habit in habits:
                 habit_data = habit.to_dict()
                 habit_data['id'] = habit.id
+                
+                # Convert timestamps to serializable format
+                if 'last_updated' in habit_data and hasattr(habit_data['last_updated'], 'isoformat'):
+                    habit_data['last_updated'] = habit_data['last_updated'].isoformat()
+                
                 result.append(habit_data)
             
             return result
@@ -54,17 +59,20 @@ class FirebaseService:
             # Create a main habit document
             habit_ref = self.db.collection('users').document(user_id).collection('habits').document('main')
             
+            # Create a copy to avoid modifying the original
+            data_to_save = habit_data.copy()
+            
             # Add timestamp for sync tracking
-            habit_data['last_updated'] = firestore.SERVER_TIMESTAMP
-            habit_data['updated_by'] = user_id
+            data_to_save['last_updated'] = firestore.SERVER_TIMESTAMP
+            data_to_save['updated_by'] = user_id
             
             # Ensure dates are properly formatted
-            if 'completedDates' in habit_data:
-                habit_data['completedDates'] = [str(d) for d in habit_data['completedDates']]
-            if 'notDoneDates' in habit_data:
-                habit_data['notDoneDates'] = [str(d) for d in habit_data['notDoneDates']]
+            if 'completedDates' in data_to_save:
+                data_to_save['completedDates'] = [str(d) for d in data_to_save['completedDates']]
+            if 'notDoneDates' in data_to_save:
+                data_to_save['notDoneDates'] = [str(d) for d in data_to_save['notDoneDates']]
             
-            habit_ref.set(habit_data, merge=True)
+            habit_ref.set(data_to_save, merge=True)
             return True
         except Exception as e:
             print(f"Error saving habit data: {e}")
@@ -126,14 +134,21 @@ class FirebaseService:
             server_habit = server_data.to_dict()
             server_timestamp = server_habit.get('last_updated')
             
+            # Convert SERVER_TIMESTAMP to serializable format
+            if server_timestamp and hasattr(server_timestamp, 'timestamp'):
+                server_habit['last_updated'] = server_timestamp.isoformat()
+            
             # Simple conflict resolution: most recent wins
             # In a production app, you might want more sophisticated merging
             if last_sync and server_timestamp:
                 server_time = server_timestamp.timestamp() if hasattr(server_timestamp, 'timestamp') else 0
-                local_time = datetime.fromisoformat(last_sync.replace('Z', '+00:00')).timestamp()
+                try:
+                    local_time = datetime.fromisoformat(last_sync.replace('Z', '+00:00')).timestamp()
+                except:
+                    local_time = 0
                 
                 if server_time > local_time:
-                    # Server data is newer
+                    # Server data is newer, return cleaned server data
                     return {
                         'status': 'success',
                         'action': 'server_to_local',
