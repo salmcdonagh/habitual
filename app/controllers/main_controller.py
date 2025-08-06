@@ -47,19 +47,31 @@ def sync_habits():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        firebase_service = FirebaseService()
+        # Initialize Firebase service with error handling
+        try:
+            firebase_service = FirebaseService()
+        except Exception as firebase_error:
+            print(f"Firebase initialization error: {firebase_error}")
+            return jsonify({'error': f'Firebase initialization failed: {str(firebase_error)}'}), 500
         
         # Get the habit data and last sync timestamp from request
         habit_data = data.get('habitData', {})
         last_sync = data.get('lastSync')
         
+        print(f"Syncing data for user: {g.user_id}")
+        print(f"Habit data keys: {list(habit_data.keys()) if habit_data else 'None'}")
+        
         # Perform sync
         sync_result = firebase_service.sync_habit_data(g.user_id, habit_data, last_sync)
         
+        print(f"Sync result: {sync_result}")
         return jsonify(sync_result)
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Sync error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Sync failed: {str(e)}'}), 500
 
 
 @main_bp.route('/api/habits', methods=['GET'])
@@ -131,6 +143,28 @@ def premium_feature():
         'features': ['Advanced analytics', 'Multiple habits', 'Export data']
     })
 
+
+# Debug endpoint for Firebase connectivity
+@main_bp.route('/debug/firebase')
+def debug_firebase():
+    """Debug Firebase connectivity"""
+    try:
+        firebase_service = FirebaseService()
+        
+        # Try to access Firestore
+        db = firebase_service.db
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Firebase initialized successfully',
+            'firestore_available': True
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'firestore_available': False
+        }), 500
 
 # Legacy route for backward compatibility
 @main_bp.route('/toggle-habit', methods=['POST'])
