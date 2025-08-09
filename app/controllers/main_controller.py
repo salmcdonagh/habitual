@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, jsonif
 from app.models.habit_tracker import HabitTracker
 from app.middleware.auth import optional_auth, require_auth, check_subscription_tier
 from app.services.firebase_service import FirebaseService
+from app import APP_VERSION
 import json
 
 main_bp = Blueprint('main', __name__)
@@ -35,7 +36,8 @@ def home():
                          not_done_dates=tracker.get_not_done_dates(),
                          why_entries=tracker.get_why_entries(),
                          is_authenticated=is_authenticated,
-                         user_email=user_email)
+                         user_email=user_email,
+                         app_version=APP_VERSION)
 
 
 @main_bp.route('/api/sync', methods=['POST'])

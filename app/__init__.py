@@ -2,6 +2,9 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import os
 
+# Application version
+APP_VERSION = "v0.1.0"
+
 
 def create_app():
     """Application factory function"""
@@ -47,7 +50,7 @@ def create_app():
         return jsonify({
             'status': 'healthy',
             'service': 'habitual-api',
-            'version': '1.0.0'
+            'version': APP_VERSION
         })
     
     # Register routes
