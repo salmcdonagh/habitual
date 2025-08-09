@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 
 # Application version
-APP_VERSION = "v0.1.0"
+APP_VERSION = "v0.1.1"
 
 
 def create_app():

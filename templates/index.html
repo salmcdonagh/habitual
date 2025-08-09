@@ -38,6 +38,12 @@
             font-size: 14px; width: 100%; box-sizing: border-box;
             transition: border-color 0.2s;
         }
+        .horizontal-form { display: flex; gap: 15px; align-items: end; flex-wrap: wrap; }
+        .horizontal-form .form-group { margin: 0; flex: 1; min-width: 120px; }
+        .horizontal-form .form-group input, .horizontal-form .form-group select { 
+            width: 100%; min-width: 100px; 
+        }
+        .horizontal-form .checkbox-group { margin-top: 24px; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none; border-color: #3b82f6;
         }
@@ -94,40 +100,42 @@
     <div class="habit-section">
         <h2>Your Daily Habit</h2>
         
-        <div class="form-group">
-            <label for="started-date">Started:</label>
-            <input type="date" id="started-date" name="started" value="{{ started_date }}">
-        </div>
-        
-        <div class="form-group">
-            <label for="frequency">Frequency:</label>
-            <select id="frequency" name="frequency">
-                <option value="Daily" {% if frequency == 'Daily' %}selected{% endif %}>Daily</option>
-                <option value="Weekly" {% if frequency == 'Weekly' %}selected{% endif %}>Weekly</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="counter">Counter:</label>
-            <input type="number" id="counter" name="counter" value="{{ counter }}" min="0">
-        </div>
-        
-        <div class="form-group">
-            <div class="checkbox-group">
-                <label>
-                    <input type="checkbox" id="done-checkbox" name="done" {% if habit_done %}checked{% endif %}>
-                    Done
-                </label>
-                <label>
-                    <input type="checkbox" id="not-done-checkbox" name="not_done" {% if not_done %}checked{% endif %}>
-                    Not Done
-                </label>
+        <div class="horizontal-form">
+            <div class="form-group">
+                <label for="started-date">Started:</label>
+                <input type="date" id="started-date" name="started" value="{{ started_date }}">
             </div>
             
-            <div class="why-field" id="why-field" style="display: {% if not_done %}block{% else %}none{% endif %};">
-                <label for="why-text">Why?</label>
-                <textarea id="why-text" name="why" rows="3" placeholder="Why wasn't this completed?">{{ why_text }}</textarea>
+            <div class="form-group">
+                <label for="frequency">Frequency:</label>
+                <select id="frequency" name="frequency">
+                    <option value="Daily" {% if frequency == 'Daily' %}selected{% endif %}>Daily</option>
+                    <option value="Weekly" {% if frequency == 'Weekly' %}selected{% endif %}>Weekly</option>
+                </select>
             </div>
+            
+            <div class="form-group">
+                <label for="counter">Counter:</label>
+                <input type="number" id="counter" name="counter" value="{{ counter }}" min="0">
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="done-checkbox" name="done" {% if habit_done %}checked{% endif %}>
+                        Done
+                    </label>
+                    <label>
+                        <input type="checkbox" id="not-done-checkbox" name="not_done" {% if not_done %}checked{% endif %}>
+                        Not Done
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="why-field" id="why-field" style="display: {% if not_done %}block{% else %}none{% endif %};">
+            <label for="why-text">Why?</label>
+            <textarea id="why-text" name="why" rows="3" placeholder="Why wasn't this completed?">{{ why_text }}</textarea>
         </div>
         
         <div class="stats">
