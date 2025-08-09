@@ -38,17 +38,28 @@
             font-size: 14px; width: 100%; box-sizing: border-box;
             transition: border-color 0.2s;
         }
-        .horizontal-form { display: flex; gap: 15px; align-items: end; flex-wrap: wrap; }
-        .horizontal-form .form-group { margin: 0; flex: 1; min-width: 120px; }
+        .horizontal-form { display: flex; gap: 8px; align-items: end; flex-wrap: nowrap; }
+        .horizontal-form .form-group { margin: 0; }
         .horizontal-form .form-group input, .horizontal-form .form-group select { 
-            width: 100%; min-width: 100px; 
+            width: 100%; box-sizing: border-box; padding: 8px; font-size: 13px;
         }
-        .horizontal-form .checkbox-group { margin-top: 24px; }
+        .horizontal-form .checkbox-group { margin-top: 20px; flex-shrink: 0; }
+        .progress-field { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; padding: 8px 12px; border-radius: 6px; text-align: center;
+            width: 70px; flex-shrink: 0;
+        }
+        .progress-field .progress-label { font-size: 10px; margin-bottom: 2px; }
+        .progress-field .progress-value { font-size: 1.2em; font-weight: bold; }
+        .form-group.date-field { width: 110px; flex-shrink: 0; }
+        .form-group.frequency-field { width: 80px; flex-shrink: 0; }
+        .form-group.counter-field { width: 70px; flex-shrink: 0; }
+        .form-group.checkbox-field { width: 140px; flex-shrink: 0; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none; border-color: #3b82f6;
         }
-        .checkbox-group { display: flex; gap: 20px; align-items: center; }
-        .checkbox-group label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+        .checkbox-group { display: flex; gap: 10px; align-items: center; }
+        .checkbox-group label { display: flex; align-items: center; gap: 4px; font-weight: normal; font-size: 12px; }
         .stats { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             color: white; padding: 20px; border-radius: 10px; margin: 20px 0; 
@@ -82,6 +93,20 @@
             border-radius: 10px; position: relative;
         }
         .close { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
+        
+        /* Mobile optimization */
+        @media (max-width: 480px) {
+            .progress-field { width: 60px; padding: 6px 8px; }
+            .progress-field .progress-label { font-size: 9px; }
+            .progress-field .progress-value { font-size: 1.1em; }
+            .form-group.date-field { width: 95px; }
+            .form-group.frequency-field { width: 70px; }
+            .form-group.counter-field { width: 60px; }
+            .form-group.checkbox-field { width: 120px; }
+            .horizontal-form { gap: 6px; }
+            .checkbox-group { gap: 8px; }
+            .checkbox-group label { font-size: 11px; }
+        }
     </style>
 </head>
 <body>
@@ -101,12 +126,17 @@
         <h2>Your Daily Habit</h2>
         
         <div class="horizontal-form">
-            <div class="form-group">
+            <div class="progress-field">
+                <div class="progress-label">Success Rate</div>
+                <div class="progress-value" id="percentage">{{ success_percentage }}%</div>
+            </div>
+            
+            <div class="form-group date-field">
                 <label for="started-date">Started:</label>
                 <input type="date" id="started-date" name="started" value="{{ started_date }}">
             </div>
             
-            <div class="form-group">
+            <div class="form-group frequency-field">
                 <label for="frequency">Frequency:</label>
                 <select id="frequency" name="frequency">
                     <option value="Daily" {% if frequency == 'Daily' %}selected{% endif %}>Daily</option>
@@ -114,12 +144,12 @@
                 </select>
             </div>
             
-            <div class="form-group">
+            <div class="form-group counter-field">
                 <label for="counter">Counter:</label>
                 <input type="number" id="counter" name="counter" value="{{ counter }}" min="0">
             </div>
             
-            <div class="form-group">
+            <div class="form-group checkbox-field">
                 <div class="checkbox-group">
                     <label>
                         <input type="checkbox" id="done-checkbox" name="done" {% if habit_done %}checked{% endif %}>
@@ -138,11 +168,6 @@
             <textarea id="why-text" name="why" rows="3" placeholder="Why wasn't this completed?">{{ why_text }}</textarea>
         </div>
         
-        <div class="stats">
-            <h3>Progress</h3>
-            <div class="percentage" id="percentage">{{ success_percentage }}%</div>
-            <p>Success Rate</p>
-        </div>
     </div>
 
     <!-- Premium Features Teaser -->
