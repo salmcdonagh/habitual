@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 
 # Application version
-APP_VERSION = "v0.1.3"
+APP_VERSION = "v0.1.4"
 
 
 def create_app():
@@ -51,6 +51,14 @@ def create_app():
             'status': 'healthy',
             'service': 'habitual-api',
             'version': APP_VERSION
+        })
+    
+    # Version endpoint
+    @app.route('/api/version')
+    def version():
+        return jsonify({
+            'version': APP_VERSION,
+            'service': 'habitual-api'
         })
     
     # Register routes
